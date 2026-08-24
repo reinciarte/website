@@ -38,14 +38,16 @@ Either way, I have already added a `_config.yml` that keeps `README.md`, `DEPLOY
 
 ---
 
-## 2. Push the site
+## 2. Push the site, without the CNAME file
 
 1. Create the repo on GitHub. Do not let it add a README, a license, or a `.gitignore`, since the repo root needs to be the site root.
-2. From this folder:
+2. **Leave `CNAME` out of the first commit.** This matters, see the box below.
+3. From this folder:
 
 ```bash
 git init
 git add .
+git reset CNAME          # keep it on disk, keep it out of this commit
 git commit -m "Initial site"
 git branch -M main
 git remote add origin https://github.com/<username>/rachaelinciarte.com.git
@@ -53,6 +55,22 @@ git push -u origin main
 ```
 
 The files must be at the **repo root**, not inside a subfolder. `index.html` should be the first thing you see on the repo page.
+
+> ### Why the CNAME file has to wait
+>
+> The `CNAME` file is how GitHub Pages learns about a custom domain. The moment it sees one, it starts **301-redirecting** `https://<username>.github.io/<repo>/` to that domain.
+>
+> Since the DNS is not pointed yet, that redirect lands on nothing. You would get a dead page instead of a preview, and it would look like the site is broken when it is fine.
+>
+> So: push without it, preview on the github.io URL, and add it at step 4 when the DNS is actually ready. You do not have to add it back by hand. Typing the domain into Settings → Pages writes the `CNAME` file into the repo for you and commits it.
+>
+> If you already pushed it, just remove it for now:
+>
+> ```bash
+> git rm --cached CNAME && git commit -m "Hold CNAME until DNS is ready" && git push
+> ```
+>
+> Then clear the Custom domain box in Settings → Pages if GitHub has already filled it in.
 
 ---
 
@@ -63,9 +81,32 @@ Repo → **Settings** → **Pages**:
 - **Source:** `Deploy from a branch`
 - **Branch:** `main`, folder `/ (root)` → **Save**
 
-Give it a minute, then confirm it works at `https://<username>.github.io/rachaelinciarte.com/` before you touch any DNS. Doing it in this order means that if something breaks later, you know it is DNS and not the site.
+Give it a minute, then open:
 
-Because the repo contains a `CNAME` file, GitHub will most likely fill in the custom domain field for you automatically. If it does, and DNS is not pointed yet, it will show a red DNS warning. That is expected and harmless. Ignore it until step 4 is done.
+```
+https://<username>.github.io/rachaelinciarte.com/
+```
+
+The whole site works at that URL. Every path in the project is relative, so nothing cares that it is being served from a `/rachaelinciarte.com/` subpath instead of a domain root. This is a real, shareable link, so it is also the way to let Rachael look the site over and ask for changes before anything points at the live domain.
+
+Doing it in this order means that if something breaks after the DNS switch, you know it is DNS and not the site.
+
+The **Custom domain** box in Settings → Pages should be empty at this stage. If GitHub has filled it in, the `CNAME` file made it into the repo. Clear the box and remove the file, per the note in step 2, or the github.io URL will just redirect you to a domain that does not resolve yet.
+
+### Two things that behave differently on the preview URL
+
+- **The contact form's redirect.** The `_next` field sends people to `https://www.rachaelinciarte.com/thanks/` after submitting, which is not live yet. Do not judge the form on the preview URL. It gets activated and tested at step 5, after the domain is working.
+- **Nothing else.** No other absolute URL in the site refers to the domain, so every page, link, image and style renders exactly as it will on the real thing.
+
+### Even faster, just for you
+
+To look at changes on your own machine without pushing at all, from this folder:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`. That serves the site at a root path, no build step, no GitHub involved. Ctrl-C to stop it.
 
 ---
 
@@ -122,7 +163,9 @@ Back in repo → **Settings** → **Pages** → **Custom domain**, enter:
 www.rachaelinciarte.com
 ```
 
-Save. GitHub runs a DNS check. Once it passes you get a green "DNS check successful."
+Save. GitHub writes the `CNAME` file back into the repo for you as a commit, then runs a DNS check. Once it passes you get a green "DNS check successful."
+
+From this point the github.io URL redirects to the custom domain, which is the behavior you want now that the domain resolves.
 
 Then tick **Enforce HTTPS**. This checkbox is greyed out until GitHub has provisioned a Let's Encrypt certificate for the domain, which usually takes a few minutes but is documented as taking up to 24 hours. Come back and tick it. Do not skip it.
 
@@ -218,6 +261,8 @@ It is under Domain List → Manage → the **Redirect Email** section. One cavea
 
 | Thing | Where |
 | --- | --- |
+| Preview URL (before DNS) | `https://<username>.github.io/<repo>/`, only works while `CNAME` is out of the repo |
+| Local preview | `python3 -m http.server 8000` in this folder |
 | Pages settings | Repo → Settings → Pages |
 | DNS | Namecheap → Domain List → Manage → Advanced DNS |
 | Nameservers | Namecheap → Domain List → Manage → Domain tab |
