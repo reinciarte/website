@@ -1,0 +1,8 @@
+# GitHub Pages runs Jekyll over the repo by default. These files are project
+# documentation, not part of the site, so keep them out of what gets published.
+# Plain HTML with no front matter is copied through untouched, so nothing else
+# about the site changes.
+exclude:
+  - README.md
+  - DEPLOY.md
+  - EDITING.md
